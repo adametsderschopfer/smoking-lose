@@ -35,6 +35,7 @@ struct MainDashboardView: View {
                         }
 
                         disclaimerSection
+                        supportButton
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 24)
@@ -275,6 +276,20 @@ struct MainDashboardView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var supportButton: some View {
+        Link(destination: URL(string: "https://pressf.com/dalekye/donate")!) {
+            Label(
+                L10n.text("Поддержать разработчика", "Support the developer"),
+                systemImage: "heart.fill"
+            )
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(AppPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .foregroundStyle(AppPalette.accent)
         }
     }
 
