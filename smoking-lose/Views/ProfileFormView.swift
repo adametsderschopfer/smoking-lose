@@ -64,6 +64,8 @@ struct ProfileFormView: View {
     private let profile: UserProfile?
 
     @State private var draft: ProfileDraft
+    @State private var hasAttemptedSubmit = false
+    @State private var touchedFields: Set<Field> = []
 
     private let notificationManager = RecoveryNotificationManager()
 
@@ -87,9 +89,11 @@ struct ProfileFormView: View {
                         disclaimerCard
                         supportButton
                     }
+                    .frame(maxWidth: 760)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 24)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, focusedField == nil ? 120 : 24)
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
@@ -97,6 +101,11 @@ struct ProfileFormView: View {
             .onTapGesture {
                 focusedField = nil
                 dismissKeyboard()
+            }
+            .onChange(of: focusedField) { previous, _ in
+                if let previous {
+                    touchedFields.insert(previous)
+                }
             }
             .navigationTitle(mode.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -118,7 +127,10 @@ struct ProfileFormView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                floatingActionBar
+                if focusedField == nil {
+                    floatingActionBar
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
         }
     }
@@ -134,7 +146,7 @@ struct ProfileFormView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let validationMessage = draft.validationMessage {
+            if hasAttemptedSubmit, let validationMessage = draft.validationMessage {
                 Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(AppPalette.warning)
@@ -319,12 +331,14 @@ struct ProfileFormView: View {
                 .foregroundStyle(.white)
         }
         .buttonStyle(.plain)
-        .disabled(!draft.isValid)
-        .opacity(draft.isValid ? 1 : 0.5)
+        .opacity(draft.isValid ? 1 : 0.82)
     }
 
     private func saveProfile() {
-        guard draft.isValid else { return }
+        guard draft.isValid else {
+            hasAttemptedSubmit = true
+            return
+        }
 
         let savedProfile: UserProfile
         if let profile {
@@ -377,15 +391,31 @@ struct ProfileFormView: View {
         @ViewBuilder valueView: () -> ValueView
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                Spacer(minLength: 12)
+                    Spacer(minLength: 12)
 
-                valueView()
-                    .labelsHidden()
+                    valueView()
+                        .labelsHidden()
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack {
+                        Spacer(minLength: 0)
+                        valueView()
+                            .labelsHidden()
+                    }
+                }
             }
             .padding(14)
             .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -408,9 +438,12 @@ struct ProfileFormView: View {
             TextField(placeholder, text: text)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 90)
+                .frame(minWidth: 90)
                 .foregroundStyle(.primary)
                 .focused($focusedField, equals: field)
+                .onChange(of: text.wrappedValue) { _, _ in
+                    touchedFields.insert(field)
+                }
         }
     }
 
@@ -419,9 +452,12 @@ struct ProfileFormView: View {
             TextField(placeholder, text: text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 110)
+                .frame(minWidth: 110)
                 .foregroundStyle(.primary)
                 .focused($focusedField, equals: field)
+                .onChange(of: text.wrappedValue) { _, _ in
+                    touchedFields.insert(field)
+                }
         }
     }
 
@@ -446,6 +482,9 @@ struct ProfileFormView: View {
     }
 
     private func errorMessage(for field: Field) -> String? {
+        let shouldShowValidation = hasAttemptedSubmit || touchedFields.contains(field)
+        guard shouldShowValidation else { return nil }
+
         switch field {
         case .cigarettesPerDay:
             if draft.cigarettesPerDay == nil {
