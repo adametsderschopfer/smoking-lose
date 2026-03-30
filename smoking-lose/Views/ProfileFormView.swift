@@ -87,7 +87,6 @@ struct ProfileFormView: View {
                         smokingCard
                         financeCard
                         disclaimerCard
-                        supportButton
                     }
                     .frame(maxWidth: 760)
                     .frame(maxWidth: .infinity)
@@ -287,20 +286,6 @@ struct ProfileFormView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
             }
-        }
-    }
-
-    private var supportButton: some View {
-        Link(destination: URL(string: "https://pressf.com/dalekye/donate")!) {
-            Label(
-                L10n.text("Поддержать разработчика", "Support the developer"),
-                systemImage: "heart.fill"
-            )
-            .font(.subheadline.weight(.semibold))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(AppPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .foregroundStyle(AppPalette.accent)
         }
     }
 
